@@ -32,6 +32,14 @@ var helmVersionedUpdatesCounter = prometheus.NewCounterVec(
 	[]string{"chart"},
 )
 
+var helmFailedUpdatesCounter = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: "helm_failed_updates_total",
+		Help: "How many helm charts applies have failed, partitioned by release name and namespace.",
+	},
+	[]string{"chart"},
+)
+
 var helmUnversionedUpdatesCounter = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Name: "helm_unversioned_updates_total",
@@ -43,6 +51,7 @@ var helmUnversionedUpdatesCounter = prometheus.NewCounterVec(
 func init() {
 	prometheus.MustRegister(helmVersionedUpdatesCounter)
 	prometheus.MustRegister(helmUnversionedUpdatesCounter)
+	prometheus.MustRegister(helmFailedUpdatesCounter)
 }
 
 // ErrPolicyNotSpecified helm related errors
@@ -323,6 +332,11 @@ func (p *Provider) applyPlans(plans []*UpdatePlan) error {
 				"name":      plan.Name,
 				"namespace": plan.Namespace,
 			}).Error("provider.helm: failed to apply plan")
+
+			helmFailedUpdatesCounter.With(prometheus.Labels{
+				"chart":     fmt.Sprintf("%s/%s", plan.Namespace, plan.Name),
+				"release":   plan.Name,
+				"namespace": plan.Namespace}).Inc()
 
 			p.sender.Send(types.EventNotification{
 				ResourceKind: "chart",
