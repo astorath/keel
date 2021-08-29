@@ -37,7 +37,7 @@ var helmFailedUpdatesCounter = prometheus.NewCounterVec(
 		Name: "helm_failed_updates_total",
 		Help: "How many helm charts applies have failed, partitioned by release name and namespace.",
 	},
-	[]string{"chart"},
+	[]string{"chart", "release", "namespace"},
 )
 
 var helmUnversionedUpdatesCounter = prometheus.NewCounterVec(
